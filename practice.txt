@@ -1,0 +1,15 @@
+try {
+        const response = await fetch("/api/checktoken", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const res = await response.json();
+        handlesuccess(res);
+    } catch (error) {
+        console.log("Error", error);
+        alert("Server Error");
+    }

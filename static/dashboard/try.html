@@ -1,0 +1,53 @@
+<div id="trending" class="bg-grey-400">
+    <p class="text-xl">Trending</p>
+    <div id="trendingtable" class=" grid grid-cols-3 overflow-x-auto">
+        <div id="trendingcard" class="bg-fuchsia-600 flex flex-col p-2">
+            <div class="flex justify-between">
+                <h2>Heading</h2>
+                <p>Booked</p>
+            </div>
+            <img src="../../assets/house.png">
+            <small>this is description</small>
+            <small>this is address</small>
+            <small>this is price</small>
+            <a href="houseid" class="text-decoration-none">Details</a>
+        </div>
+    </div>
+</div>
+
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () { getTrending(); });
+
+    async function getTrending() {
+        const Trending = document.getElementById("trending")
+        const trendingTable = document.getElementById("trendingtable")
+        fetch("/api/trending")
+            .then(response => response.json())
+            .then(data => {
+                if (!data.properties) {
+                    throw new Error("Invalid response structure");
+                }
+
+                data.properties.forEach(property => {
+                    const propertyElement = document.createElement('div');
+                    propertyElement.classList.add("bg-fuchsia-600", "flex", "flex-col", 'p-2');
+
+                    propertyElement.innerHTML = `
+                            <div class="flex justify-between">
+                                <h2>${property.title}</h2>
+                                <p>${property.status}</p>
+                            </div>
+                            <img src="../../assets/house.png">
+                            <small>${property.description}</small>
+                            <small>${property.address}, ${property.city}</small>
+                            <small>${property.price}</small>
+                            <a href="api/details/${property.id}" class="text-decoration-none">Details</a>
+                        `;
+                    trendingTable.appendChild(propertyElement);
+                })
+            })
+            .catch(error => console.log(error));
+    }
+</script>
