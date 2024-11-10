@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
+</head>
+
+<body class="bg-gray-100">
+    <div class="w-full h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex items-center justify-between bg-gradient-to-r from-green-300 to-green-800 p-4">
+            <div class="text-white text-lg font-semibold">
+                Welcome to <strong>Gharbahal.com</strong>
+            </div>
+            <form action="get" class="flex w-2/5">
+                <input type="text"
+                    class="w-full h-10 pl-4 pr-20 border-2 border-green-800 rounded-l-md focus:outline-none"
+                    placeholder="Search Properties">
+                <button type="submit"
+                    class="bg-green-700 text-white px-4 rounded-r-md focus:outline-none">Search</button>
+            </form>
+            <div id="loginstatus" class="flex items-center space-x-4">
+                <span class="text-white">Welcome, Prakhar</span>
+                <img src="https://via.placeholder.com/40" alt="User Avatar" class="rounded-full">
+            </div>
+        </header>
+
+        <div class="flex flex-grow">
+            <!-- Sidebar -->
+            <aside class="w-1/5 bg-gray-200 flex flex-col p-4 space-y-4">
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined">person</span>
+                    <a href="profile/1" class="text-black hover:underline">Profile</a>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="material-symbols-outlined">house</span>
+                    <a href="addproperty" class="text-black hover:underline">Add Property</a>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="flex-grow bg-white p-8">
+                <form id="propertyForm" enctype="multipart/form-data" class="space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <div>
+                                <label for="title" class="block text-sm font-medium text-gray-700">Property Name</label>
+                                <input type="text" name="title" placeholder="Enter Property Name" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="district"
+                                        class="block text-sm font-medium text-gray-700">District</label>
+                                    <select name="district"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                        <option>Select District</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="type" class="block text-sm font-medium text-gray-700">Type</label>
+                                    <select name="type"
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                        <option>Select Type</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="purpose" class="block text-sm font-medium text-gray-700">Purpose</label>
+                                    <input type="text" name="purpose" placeholder="Enter Your Purpose of renting"
+                                        required
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                </div>
+                                <div>
+                                    <label for="layout" class="block text-sm font-medium text-gray-700">Layout</label>
+                                    <input type="text" name="layout" placeholder="Enter Layout" required
+                                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="description"
+                                    class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea name="description" placeholder="Property Description" required
+                                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"></textarea>
+                            </div>
+                        </div>
+                        <!-- Right Column -->
+                        <div class="space-y-6">
+                            <div>
+                                <label for="thumbnail" class="block text-sm font-medium text-gray-700">Property
+                                    Images</label>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div
+                                        class="border-2 border-dashed border-gray-300 p-6 flex items-center justify-center text-gray-500">
+                                        <input type="file" name="thumbnail" accept="image/*" required>
+                                    </div>
+                                    <div
+                                        class="border-2 border-dashed border-gray-300 p-6 flex items-center justify-center text-gray-500">
+                                        <input type="file" name="image1" accept="image/*">
+                                    </div>
+                                    <div
+                                        class="border-2 border-dashed border-gray-300 p-6 flex items-center justify-center text-gray-500">
+                                        <input type="file" name="image2" accept="image/*">
+                                    </div>
+                                    <div
+                                        class="border-2 border-dashed border-gray-300 p-6 flex items-center justify-center text-gray-500">
+                                        <input type="file" name="image3" accept="image/*">
+                                    </div>
+                                    <div
+                                        class="border-2 border-dashed border-gray-300 p-6 flex items-center justify-center text-gray-500">
+                                        <input type="file" name="image4" accept="image/*">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" id="submitproperty"
+                        class="mt-5 bg-green-700 text-white px-4 py-2 rounded focus:outline-none hover:bg-green-800">
+                        Add Property
+                    </button>
+                </form>
+            </main>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gradient-to-r from-green-300 to-green-800 h-16 flex items-center justify-center text-white">
+            <p>&copy; 2024 Gharbahal.com. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+
+</html>

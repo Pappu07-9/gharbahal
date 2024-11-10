@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
+
+</head>
+
+<body>
+    <div class="container mx-auto">
+        <div class="flex p-5 bg-gradient-to-r items-center from-green-300 to-green-800 justify-between">
+            <p class="m-3  justify-between w-1/5">Welcome to <strong>GharBahal.com</strong></p>
+            <form action="get" class="m-3 justify-between w-3/5 items-center">
+                <input type="text" class="h-10 w-4/5 pl-12 border-2 bg-green-100 border-green-800 rounded"
+                    placeholder="Search Properties">
+                <button type="submit" class="border border-green-700 bg-green-700 p-2 rounded">Search</button>
+            </form>
+            <div id="loginstatus" class="flex w-1/5">
+
+            </div>
+        </div>
+        <div class="flex bg-white p-3 w-full h-screen">
+            <div class="w-1/5 bg-gray-200 text-center flex flex-col items-center p-3 " id="sidebar">
+
+            </div>
+            <div class="w-4/5 pl-3  grow overflow-y-auto">
+                <div id="trending" class="bg-red-800">
+                    <p class="text-xl">Trending</p>
+                    <div id="trendingtable" class=" grid grid-cols-3 overflow-x-auto">
+
+
+                    </div>
+
+                </div>
+                <div id="recommended" class="bg-grey-800">
+                    <p class="text-xl">Recommended</p>
+                    <div id="recommendedtable" class=" grid grid-cols-3 overflow-x-auto">
+
+
+                    </div>
+
+                </div>
+                <div id="recent" class="bg-grey-800">
+                    <p class="text-xl">Recents</p>
+                    <div id="recenttable" class=" grid grid-cols-3 overflow-x-auto">
+
+
+                    </div>
+
+                </div>
+
+
+            </div>
+        </div>
+        <div class="flex bg-gradient-to-r from-green-300 to-green-800 h-64">
+            <p>this is footer</p>
+            <p>this line 2</p>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () { checkToken(); });
+
+        function handlesuccess(res) {
+            const loginStatus = document.getElementById("loginstatus")
+            const { success, data, message } = res
+            const sidebar = document.getElementById("sidebar")
+            const trending = document.getElementById("trending")
+
+            if (success) {
+                loginStatus.innerHTML = `
+                    <p class="text-black px-3 py-2 rounded">Welcome, ${data.username}</p>
+                    <a href="/logout" id="logout" class="text-black hover:bg-green-900 hover:text-white px-3 py-2 rounded">Logout</a>
+                `
+                sidebar.innerHTML = `
+                    <div class="flex m-3">
+                        <span class="material-symbols-outlined">
+                    person
+                    </span>
+                    <a href="profile/${data.user_id}">Profile</a></div>
+                    <div class="flex m-3">
+                        <span class="material-symbols-outlined">
+                            house
+                        </span>
+                        <a href = "addproduct">Add Property</a>
+                    </div>
+                `
+
+                document.getElementById("logout").addEventListener('click', function (e) {
+                    e.preventDefault();
+                    localStorage.removeItem("Authorization");
+                    checkToken();
+                });
+            }
+            else {
+                loginStatus.innerHTML = `
+                    <a href="/login" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Login</a>
+                    <a href="/register" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Register</a>
+                `;
+                sidebar.style.display = "none";
+
+            }
+
+
+        };
+        async function checkToken() {
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            try {
+                const response = await fetch("/api/checktoken", {
+                    method: "GET",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const res = await response.json();
+                handlesuccess(res);
+            }
+            catch (error) {
+                console.log("error", error);
+            }
+
+        };
+
+
+        document.addEventListener("DOMContentLoaded", function () { getTrending(); getRecommended(); getRecents(); });
+
+        async function getTrending() {
+            const Trending = document.getElementById("trending")
+            const trendingTable = document.getElementById("trendingtable")
+            fetch("/api/trending")
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.properties) {
+                        throw new Error("Invalid response structure");
+                    }
+                    console.log(data)
+                    data.properties.forEach(property => {
+                        const propertyElement = document.createElement('div');
+                        propertyElement.classList.add("bg-gray-200", "hover:bg-green-700", "hover:border-transparent", "flex", "flex-col", 'p-2', 'm-1', 'border', "rounded-md");
+
+                        propertyElement.innerHTML = `
+                            <div class="flex justify-between">
+                                <h2 class="text-xl">${property.title}</h2>
+                                <p>${property.status}</p>
+                            </div>
+                            <img src="../../assets/house.png">
+                            <small>${property.description}</small>
+                            <small>${property.address}, ${property.city}</small>
+                            <small>${property.price}</small>
+                            <a href="api/details/${property.id}" target="_"> Details</a>
+                        `;
+
+                        trendingTable.appendChild(propertyElement);
+                    })
+
+                        .catch(error => Trending.style.display = "none");
+                })
+        }
+        async function getRecommended() {
+            const Recommended = document.getElementById("recommended")
+            const recommendedTable = document.getElementById("recommendedtable")
+            fetch("/api/recommended")
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.properties) {
+                        throw new Error("Invalid response structure");
+                    }
+
+                    data.properties.forEach(property => {
+                        const propertyElement = document.createElement('div');
+                        propertyElement.classList.add("bg-gray-200", "hover:bg-green-700", "hover:border-transparent", "flex", "flex-col", 'p-2', 'm-1', 'border', "rounded-md");
+
+                        propertyElement.innerHTML = `
+                            <div class="flex justify-between">
+                                <h2>${property.title}</h2>
+                                <p>${property.status}</p>
+                            </div>
+                            <img src="../../assets/house.png">
+                            <small>${property.description}</small>
+                            <small>${property.address}, ${property.city}</small>
+                            <small>${property.price}</small>
+                            <a href="api/details/${property.id}" target="_"> Details</a>
+                        `;
+
+                        recommendedTable.appendChild(propertyElement);
+                    })
+
+                        .catch(error => Recommended.style.display = "none");
+                })
+        }
+        async function getRecents() {
+            const Recents = document.getElementById("recent")
+            const recentsTable = document.getElementById("recenttable")
+            fetch("/api/recents")
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.properties) {
+                        throw new Error("Invalid response structure");
+                    }
+
+                    data.properties.forEach(property => {
+                        const propertyElement = document.createElement('div');
+                        propertyElement.classList.add("bg-gray-200", "hover:bg-green-700", "hover:border-transparent", "flex", "flex-col", 'p-2', 'm-1', 'border', "rounded-md");
+
+                        propertyElement.innerHTML = `
+                            <div class="flex justify-between">
+                                <h2>${property.title}</h2>
+                                <p>${property.status}</p>
+                            </div>
+                            <img src="../../assets/house.png">
+                            <small>${property.description}</small>
+                            <small>${property.address}, ${property.city}</small>
+                            <small>${property.price}</small>
+                            <a href="api/details/${property.id}" target="_"> Details</a>
+                        `;
+
+                        recentsTable.appendChild(propertyElement);
+                    })
+
+                        .catch(error => Recents.style.display = "none");
+                })
+        }
+    </script>
+</body>
+
+</html>

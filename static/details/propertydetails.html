@@ -4,41 +4,413 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Details</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2p-5mily=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
+    <style>
+        .star-rating {
+            display: flex;
+            font-size: 2rem;
+            direction: rtl;
+            /* Allows clicking from right to left */
+        }
+
+        .star-rating input[type="radio"] {
+            display: none;
+        }
+
+        .star-rating label {
+            cursor: pointer;
+            color: #ccc;
+        }
+
+        .star-rating input[type="radio"]:checked~label {
+            color: gold;
+        }
+
+        .star-rating label:hover,
+        .star-rating label:hover~label {
+            color: gold;
+        }
+    </style>
+
 </head>
 
-<body class="w-screen overflow-x-hidden">
-    <div class="w-full">
-        <div class="flex p-5 bg-gradient-to-r items-center from-green-300 to-green-800 justify-between">
-            <p class="m-3 justify-between w-1/5">Welcome to <strong>GharBahal.com</strong></p>
-            <form action="get" class="m-3 justify-between w-3/5 items-center">
-                <input type="text" class="h-10 w-4/5 border-2 bg-green-100 border-green-800 rounded"
-                    placeholder="Search Properties">
-                <button type="submit" class="border border-green-700 bg-green-700 p-2 rounded">Search</button>
+<body>
+    <div class="container mx-auto">
+        <div class="flex p-2 bg-green-400 items-center justify-between">
+            <a class="m-3  justify-between w-1/5 font-sans" href="/">Welcome to <strong>GharBahal.com</strong></a>
+            <form method="get" action="/searchproperty/" class=" justify-center w-3/5 items-center">
+                <select class="h-10 w-32 bg-green-100 rounded" name="type" id="">
+                    <option value="house">House</option>
+                    <option value="room">Room</option>
+                    <option value="flat">Flat</option>
+                </select>
+                <input type="text" required name="city" class="h-10 w-3/5 pl-12 bg-green-100 rounded"
+                    placeholder="Enter City">
+                <button type="submit"
+                    class="bg-green-600 hover:bg-green-800 h-10  px-7 rounded text-white ">Search</button>
             </form>
             <div id="loginstatus" class="flex w-1/5">
 
             </div>
         </div>
-        <div class="flex bg-blue-100 w-full h-screen">
-            <div class="w-1/5 bg-blue-500" id="sidebar">this is sidebar</div>
-            <div class="w-4/5 bg-red-500 grow overflow-y-auto">
-
+        <div class="flex w-full bg-gray-100 min-h-screen">
+            <div class="w-1/5 bg-white text-center   flex flex-col items-center " id="sidebar">
 
             </div>
-        </div>
-        <div class="flex bg-pink-500 h-64">
-            <p>this is footer</p>
-            <p>this line 2</p>
+            <div class="w-4/5 pl-3 m-7 bg-white grow overflow-y-auto">
+                <div id="propertydetail" class="bg-white flex-col py-8 px-3 flex">
+                    <div class="text-lg flex justify-between font-bold h-[50px]">
+                        <p>Details</p>
+                        <div class="flex">
+                            <button
+                                class="font-bold cursor-pointer px-2 py-2 bg-green-600 hover:bg-green-800 px-7 rounded text-white "
+                                id="bookbutton" data="{{propertyid}}" onclick="bookProduct()"></button>
+                            <p class="font-bold cursor-pointer px-2 py-2 justify-center items-center" id="savebutton"
+                                data="{{propertyid}}" onclick="saveProduct()">Save</p>
+                        </div>
+                    </div>
+                    <div class=" flex pt-2 justify-between">
+                        <div class="flex flex-col">
+                            <div class="text-lg font-bold">
+                                {{title}}
+                            </div>
+                            <div class="flex gap-2">
+                                <div class="flex">
+                                    <span class="font-bold material-symbols-outlined">
+                                        payments
+                                    </span>
+                                    <p id="price">
+                                        {{price}}
+                                    </p>
+                                </div>
+                                <div class="flex">
+                                    <span class="font-bold material-symbols-outlined">
+                                        home
+                                    </span>
+                                    <p class=" capitalize" id="propertybookstatus">
+                                        {{status}}
+                                    </p>
+                                </div>
+
+
+                                <div class="flex">
+                                    <span class="font-bold material-symbols-outlined">
+                                        visibility
+                                    </span>
+                                    <p>
+                                        {{views}}
+                                    </p>
+                                </div>
+
+                            </div>
+                            <div class="flex flex-col py-8">
+                                <div class="min-w-[400px] min-h-[400px]">
+                                    <p class="font-bold text-md">Description</p>
+                                    <p class=" py-2 px-2">
+                                        {{description}}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-md">Additional Information</p>
+                                    <div class="grid grid-cols-2">
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">House Number:</p>
+                                            <p>{{house_number}}</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">Street Name:</p>
+                                            <p>{{street_name}}</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">Country:</p>
+                                            <p>{{country}}</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">City:</p>
+                                            <p>{{city}}</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">State:</p>
+                                            <p>{{state}}</p>
+                                        </div>
+                                        <div class="flex items-center">
+                                            <p class="text-sm font-bold">Zip Code:</p>
+                                            <p>{{zip_code}}</p>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col  items-center">
+                            <div class="py-2">
+                                {{firstimage}}
+                            </div>
+                            <div class="flex gap-2" id="property-images">
+                                {{images}}
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="flex w-full py-2">
+
+                        <div class="flex flex-col w-full">
+                            <div class="flex justify-center items-center">
+                                <p class="pt-2 pr-4">Rating:</p>
+                                <div class="star-rating items-center justify-center">
+                                    <input type="radio" id="star5" name="rating" value="5"><label
+                                        for="star5">&#9733;</label>
+                                    <input type="radio" id="star4" name="rating" value="4"><label
+                                        for="star4">&#9733;</label>
+                                    <input type="radio" id="star3" name="rating" value="3"><label
+                                        for="star3">&#9733;</label>
+                                    <input type="radio" id="star2" name="rating" value="2"><label
+                                        for="star2">&#9733;</label>
+                                    <input type="radio" id="star1" name="rating" value="1"><label
+                                        for="star1">&#9733;</label>
+                                </div>
+                            </div>
+                            <div class="w-full p-3">
+                                <h3 class="text-lg font-semibold mb-2">Enter a Description:</h3>
+                                <textarea id="review_desc"
+                                    class="w-full h-40 p-3 text-base font-sans text-gray-700 border border-[#404040] rounded-md resize-y focus:outline-none focus:border-blue-500"
+                                    placeholder="Write your description here..."></textarea>
+                            </div>
+                            <div class="w-full flex justify-center pb-2">
+                                <button type="submit"
+                                    class="bg-green-600 hover:bg-green-800 h-10  px-7 rounded text-white"
+                                    id="submitreviewbutton" onclick="postReview()" data="{{propertyid}}">Submit
+                                    Review</button>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div>
+                        <div class="flex justify-between">
+                            <p class="px-2 py-2 text-bold text-[30px]">Reviews ({{no_of_ratings}})</p>
+                            <p class="px-2 py-2 text-[18px]">Average Rating : {{average_rating}}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-6 justify-items-center">
+                            {{reviews_list}}
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
+    </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function () { checkToken(); });
+        async function postReview() {
+            // Get the selected rating
+            let rating;
+            const ratingOptions = document.getElementsByName("rating");
+            for (const option of ratingOptions) {
+                if (option.checked) {
+                    rating = option.value;
+                    break;
+                }
+            }
 
+            // Get the review description
+            const review = document.getElementById("review_desc").value;
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            const property_id = document.getElementById("submitreviewbutton").getAttribute("data")
+            console.log(`this is id ${property_id}`)
+            if (token == null) {
+                alert("Please Login First");
+            }
+            // Log the values
+            console.log(`Rating: ${rating}, Review: ${review}`);
+            try {
+                const response = await fetch("/api/postreview", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        rating: rating,
+                        review: review,
+                        property_id: property_id
+                    })
+                });
+                const res = await response.json()
+                if (res.success) {
+                    console.log("success")
+                    window.location.reload();
+                } else {
+                    console.log("failed")
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        async function bookProduct() {
+            const bookbutton = document.getElementById("bookbutton")
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            const property_id = bookbutton.getAttribute("data")
+            console.log(`this is token${token}`)
+            if (token == null) {
+                window.location.href = "/login";
+            }
+            try {
+                const response = await fetch("/api/bookproperty", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(property_id)
+                });
+                const res = await response.json()
+                if (res.success) {
+                    bookbutton.innerText = `${res.text}`;
+                } else {
+                    window.location.href = "/login";
+                    bookbutton.innerText = `${res.text}`;
+                }
+            } catch (error) {
+                console.log(error)
+                window.location.href = "/login";
+            }
+        }
+
+        async function checkBookStatus() {
+            const book = document.getElementById("bookbutton")
+            const productid = book.getAttribute("data")
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+
+            try {
+                const response = await fetch("/api/checkbookstatus", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(productid)
+                });
+
+                const res = await response.json();
+                const bookbutton = document.getElementById("bookbutton")
+                if (res.success && res.disabled) {
+                    bookbutton.innerText = `${res.text}`
+                    bookbutton.disabled = true;
+                    bookbutton.removeAttribute("onclick")
+                } else if (res.success && !res.disabled) {
+                    bookbutton.innerText = `${res.text}`
+                }
+                else {
+                    bookbutton.innerText = `${res.text}`
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        async function checkSavedStatus() {
+            const save = document.getElementById("savebutton")
+            const productid = save.getAttribute("data")
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            try {
+                const response = await fetch("/api/checksavedproduct", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(productid)
+                });
+
+                const res = await response.json();
+                const savebutton = document.getElementById("savebutton")
+                if (res.success) {
+                    savebutton.innerText = `${res.text}`
+                } else {
+                    savebutton.innerText = `${res.text}`
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+
+        async function saveProduct() {
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            console.log(token)
+            const save = document.getElementById("savebutton")
+            const productid = save.getAttribute("data")
+            if (token == null) {
+                window.location.href = "/login";
+            }
+            try {
+                const response = await fetch("/api/saveproduct", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(productid)
+                });
+
+                const res = await response.json();
+                const savebutton = document.getElementById("savebutton")
+                if (res.success) {
+                    savebutton.innerText = `${res.text}`
+                } else {
+                    window.location.href = "/login";
+                }
+            } catch (error) {
+                console.log("this is error")
+                console.log(error)
+            }
+        }
+
+        function changeImage(imageSrc) {
+            document.getElementById('mainImage').src = '/' + imageSrc;
+        }
+
+
+        function formatCustomNumber(number) {
+            // Convert number to string
+            const numberString = number.toString();
+
+            // Separate integer and decimal parts
+            const [integerPart, decimalPart] = numberString.split(".");
+
+            // Add commas based on Nepalese numbering system grouping
+            const formattedInteger = integerPart
+                .split("")
+                .reverse()
+                .map((digit, index) => {
+                    // Adding commas according to the Nepalese numbering system
+                    if (index % 2 === 0 && index !== 0) {
+                        return `,${digit}`;
+                    }
+                    return digit;
+                })
+                .reverse()
+                .join("");
+
+            const newFormattedNumber = formattedInteger.charAt(0) === "," ? formattedInteger.slice(1) : formattedInteger;
+
+            // Combine the formatted integer and decimal parts
+            const formattedNumber = decimalPart ? `Rs. ${newFormattedNumber}.${decimalPart}` : `Rs. ${newFormattedNumber}`;
+
+            // Return the formatted string without space or comma between the currency symbol and the number
+            return `${formattedNumber}`;
+        }
+        document.addEventListener("DOMContentLoaded", function () { checkToken(); formatprice(); checkSavedStatus(); checkBookStatus(); loadReviews(); });
+        function formatprice() {
+            let priceElement = document.getElementById("price")
+            let priceValue = parseFloat(priceElement.innerText)
+            priceElement.innerText = formatCustomNumber(priceValue)
+            console.log(formatCustomNumber(priceValue))
+        }
         function handlesuccess(res) {
+
             const loginStatus = document.getElementById("loginstatus")
             const { success, data, message } = res
             const sidebar = document.getElementById("sidebar")
@@ -46,8 +418,23 @@
 
             if (success) {
                 loginStatus.innerHTML = `
-                    <p class="text-black px-3 py-2 rounded">Welcome, ${data.username}</p>
-                    <a href="/logout" id="logout" class="text-black hover:bg-green-900 hover:text-white px-3 py-2 rounded">Logout</a>
+                    <div class="text-black rounded flex items-center px-2 justify-center  gap-1">
+                        <p>Welcome, </p>
+                        <p class="font-medium capitalize underline underline-offset-2 cursor-pointer hover:text-green-900">${data.username}</p></div>
+                    <a href="/logout" id="logout" class="text-black hover:bg-green-900 hover:text-white px-3 py-2 ml-2 rounded">Logout</a>
+                `
+                sidebar.innerHTML = `
+                    <div class="flex w-full mt-2 h-14 items-center justify-center hover:bg-green-400 hover:text-white  rounded-md">
+                        <span class="material-symbols-outlined">
+                    person
+                    </span>
+                    <a href="/userprofile/${data.user_id}">Profile</a></div>
+                    <div class="flex  w-full h-14 items-center justify-center hover:bg-green-400 hover:text-white  rounded-md">
+                        <span class="material-symbols-outlined">
+                            house
+                        </span>
+                        <a href = "/addproduct">Add Property</a>
+                    </div>
                 `
 
                 document.getElementById("logout").addEventListener('click', function (e) {
@@ -58,8 +445,8 @@
             }
             else {
                 loginStatus.innerHTML = `
-                    <a href="login" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Login</a>
-                    <a href="register" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Register</a>
+                    <a href="/login" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Login</a>
+                    <a href="/register" class="text-black hover:bg-black hover:text-white px-3 py-2 rounded">Register</a>
                 `;
                 sidebar.style.display = "none";
 
