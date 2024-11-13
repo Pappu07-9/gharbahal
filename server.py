@@ -825,7 +825,8 @@ class RequestHandler(BaseHTTPRequestHandler):
     owner.username AS owner_username, 
     owner.email AS owner_email, 
     tenant.username AS tenant_username,
-    tenant.email AS tenant_email
+    tenant.email AS tenant_email,
+    tenant.number AS tenant_number
 FROM properties p
 JOIN users owner ON owner.id = p.owner_id
 LEFT JOIN users tenant ON tenant.id = p.tenant_id
@@ -837,7 +838,7 @@ WHERE p.id =%s;""",
                     send_email(
                         result.get("owner_email"),
                         f"Your Property has been Booked",
-                        f"Your Property has been booked by {result.get("tenant_username")}. You can email him at {result.get("tenant_email")} for further negotiation.",
+                        f"Your Property has been booked by {result.get("tenant_username")}. You can email him at {result.get("tenant_email")} or {result.get("tenant_number")} for further negotiation.",
                     )
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
@@ -1881,8 +1882,10 @@ def periodic_task():
                         SELECT 
     owner.username AS owner_username, 
     owner.email AS owner_email, 
+    owner.number AS owner_number,
     tenant.username AS tenant_username,
-    tenant.email AS tenant_email
+    tenant.email AS tenant_email,
+    tenant.number AS tenant_number
 FROM properties p
 JOIN users owner ON owner.id = p.owner_id
 LEFT JOIN users tenant ON tenant.id = p.tenant_id
@@ -1900,12 +1903,12 @@ WHERE p.id = %s;
                 send_email(
                     recipient_email=result.get("owner_email"),
                     subject=f"Property Status changed to Available",
-                    body=f"Your Property status has been changed to available as it has been booked by {result.get("tenant_username")} for more than 7 days and no action has been performed on it.",
+                    body=f"Your Property status has been changed to available as it has been booked by {result.get("tenant_username")} for more than 7 days and no action has been performed on it. You can contact the tenant at {result.get("tenant_number")}",
                 )
                 send_email(
                     recipient_email=result.get("tenant_email"),
                     subject="Your Booked Property has been cancelled",
-                    body=f"The property you had booked has not been finalized. So in order to make it accessed by other users it has been cancelled and made available",
+                    body=f"The property you had booked has not been finalized. So in order to make it accessed by other users it has been cancelled and made available. You can contact the owner at {result.get("owner_number")}",
                 )
                 connection.commit()
                 connection.close()
