@@ -67,9 +67,9 @@
                         <div class="flex">
                             <button
                                 class="font-bold cursor-pointer px-2 py-2 bg-green-600 hover:bg-green-800 px-7 rounded text-white "
-                                id="bookbutton" data="{{propertyid}}"></button>
-                            <p class="font-bold cursor-pointer px-2 py-2 justify-center items-center" id="savebutton"
-                                data="{{propertyid}}" onclick="saveProduct()">Save</p>
+                                id="deletebutton" data="{{propertyid}}" onclick="deleteProduct()">Delete
+                                Property</button>
+
                         </div>
                     </div>
                     <div class=" flex pt-2 justify-between">
@@ -155,39 +155,7 @@
                         </div>
 
                     </div>
-                    <div class="flex w-full py-2">
 
-                        <div class="flex flex-col w-full" id="reviewbox">
-                            <div class="flex justify-center items-center">
-                                <p class="pt-2 pr-4">Rating:</p>
-                                <div class="star-rating items-center justify-center">
-                                    <input type="radio" id="star5" name="rating" value="5"><label
-                                        for="star5">&#9733;</label>
-                                    <input type="radio" id="star4" name="rating" value="4"><label
-                                        for="star4">&#9733;</label>
-                                    <input type="radio" id="star3" name="rating" value="3"><label
-                                        for="star3">&#9733;</label>
-                                    <input type="radio" id="star2" name="rating" value="2"><label
-                                        for="star2">&#9733;</label>
-                                    <input type="radio" id="star1" name="rating" value="1"><label
-                                        for="star1">&#9733;</label>
-                                </div>
-                            </div>
-                            <div class="w-full p-3">
-                                <h3 class="text-lg font-semibold mb-2">Enter a Description:</h3>
-                                <textarea id="review_desc"
-                                    class="w-full h-40 p-3 text-base font-sans text-gray-700 border border-[#404040] rounded-md resize-y focus:outline-none focus:border-blue-500"
-                                    placeholder="Write your description here..."></textarea>
-                            </div>
-                            <div class="w-full flex justify-center pb-2">
-                                <button type="submit"
-                                    class="bg-green-600 hover:bg-green-800 h-10  px-7 rounded text-white"
-                                    id="submitreviewbutton" onclick="postReview()" data="{{propertyid}}">Submit
-                                    Review</button>
-                            </div>
-                        </div>
-
-                    </div>
                     <div>
                         <div class="flex justify-between">
                             <p class="px-2 py-2 text-bold text-[30px]">Reviews ({{no_of_ratings}})</p>
@@ -205,77 +173,16 @@
     </div>
     <script>
 
-        document.getElementById("bookbutton").addEventListener("click", function () {
-            const token = localStorage.getItem("Authorization")
-            if (!token) {
-                window.location.href = "/login";
-            }
-            else {
-                const userConfirmed = confirm("Are you sure you want to book this product?");
-                if (userConfirmed) {
-                    bookProduct();
-                }
-            }
-        });
-        async function postReview() {
-            // Get the selected rating
-            let rating;
-            const ratingOptions = document.getElementsByName("rating");
-            for (const option of ratingOptions) {
-                if (option.checked) {
-                    rating = option.value;
-                    break;
-                }
-            }
-
-            // Get the review description
-            const review = document.getElementById("review_desc").value;
+        async function deleteProduct() {
+            const deletebutton = document.getElementById("deletebutton")
             const token = JSON.parse(localStorage.getItem("Authorization"))
-            const property_id = document.getElementById("submitreviewbutton").getAttribute("data")
-            console.log(`this is id ${property_id}`)
-            if (!token) {
-                alert("Please Login First");
-            }
-            if (!review || rating == null) {
-                alert("Please enter review and give ratings too.")
-            } else {
-                // Log the values
-                console.log(`Rating: ${rating}, Review: ${review}`);
-                try {
-                    const response = await fetch("/api/postreview", {
-                        method: "POST",
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify({
-                            rating: rating,
-                            review: review,
-                            property_id: property_id
-                        })
-                    });
-                    const res = await response.json()
-                    if (res.success) {
-                        console.log("success")
-                        window.location.reload();
-                    } else {
-                        console.log("failed")
-                    }
-                } catch (error) {
-                    console.log(error)
-                }
-            }
-        }
-        async function bookProduct() {
-            const bookbutton = document.getElementById("bookbutton")
-            const token = JSON.parse(localStorage.getItem("Authorization"))
-            const property_id = bookbutton.getAttribute("data")
+            const property_id = deletebutton.getAttribute("data")
             console.log(`this is token${token}`)
             if (token == null) {
                 window.location.href = "/login";
             }
             try {
-                const response = await fetch("/api/bookproperty", {
+                const response = await fetch("/api/deleteproperty", {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json',
@@ -285,10 +192,9 @@
                 });
                 const res = await response.json()
                 if (res.success) {
-                    bookbutton.innerText = `${res.text}`;
+                    window.location.href = "/";
                 } else {
                     window.location.href = "/login";
-                    bookbutton.innerText = `${res.text}`;
                 }
             } catch (error) {
                 console.log(error)
@@ -296,118 +202,7 @@
             }
         }
 
-        async function checkBookStatus() {
-            const book = document.getElementById("bookbutton")
-            const productid = book.getAttribute("data")
-            const token = JSON.parse(localStorage.getItem("Authorization"))
 
-            try {
-                const response = await fetch("/api/checkbookstatus", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(productid)
-                });
-
-                const res = await response.json();
-                const bookbutton = document.getElementById("bookbutton")
-                if (res.success && res.disabled) {
-                    bookbutton.innerText = `${res.text}`
-                    bookbutton.disabled = true;
-                    bookbutton.removeAttribute("onclick")
-                } else if (res.success && !res.disabled) {
-                    bookbutton.innerText = `${res.text}`
-                }
-                else {
-                    bookbutton.innerText = `${res.text}`
-                }
-            } catch (error) {
-                console.log(error)
-            }
-        }
-
-        async function checkSavedStatus() {
-            const save = document.getElementById("savebutton")
-            const productid = save.getAttribute("data")
-            const token = JSON.parse(localStorage.getItem("Authorization"))
-            try {
-                const response = await fetch("/api/checksavedproduct", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(productid)
-                });
-
-                const res = await response.json();
-                const savebutton = document.getElementById("savebutton")
-                if (res.success) {
-                    savebutton.innerText = `${res.text}`
-                } else {
-                    savebutton.innerText = `${res.text}`
-                }
-            } catch (error) {
-                console.log(error)
-            }
-        }
-        async function checkReviewStatus() {
-            const save = document.getElementById("savebutton")
-            const productid = save.getAttribute("data")
-            try {
-                const token = JSON.parse(localStorage.getItem("Authorization"))
-                const response = await fetch("/api/checkreviewstatus", {
-                    method: "GET",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'product_id': `${productid}`
-                    },
-                });
-
-                const res = await response.json();
-                const reviewbox = document.getElementById("reviewbox")
-                if (res.success) {
-                    reviewbox.style.display = "none";
-                }
-            } catch (error) {
-                console.log(error)
-
-            }
-        }
-
-        async function saveProduct() {
-            const token = JSON.parse(localStorage.getItem("Authorization"))
-            console.log(token)
-            const save = document.getElementById("savebutton")
-            const productid = save.getAttribute("data")
-            if (token == null) {
-                window.location.href = "/login";
-            }
-            try {
-                const response = await fetch("/api/saveproduct", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(productid)
-                });
-
-                const res = await response.json();
-                const savebutton = document.getElementById("savebutton")
-                if (res.success) {
-                    savebutton.innerText = `${res.text}`
-                } else {
-                    window.location.href = "/login";
-                }
-            } catch (error) {
-                console.log("this is error")
-                console.log(error)
-            }
-        }
 
         function changeImage(imageSrc) {
             document.getElementById('mainImage').src = '/' + imageSrc;
@@ -443,7 +238,7 @@
             // Return the formatted string without space or comma between the currency symbol and the number
             return `${formattedNumber}`;
         }
-        document.addEventListener("DOMContentLoaded", function () { checkReviewStatus(); checkToken(); formatprice(); checkSavedStatus(); checkBookStatus(); loadReviews(); });
+        document.addEventListener("DOMContentLoaded", function () { checkToken(); formatprice(); loadReviews(); });
         function formatprice() {
             let priceElement = document.getElementById("price")
             let priceValue = parseFloat(priceElement.innerText)
@@ -458,7 +253,6 @@
             const trending = document.getElementById("trending")
 
             if (success) {
-
                 loginStatus.innerHTML = `
                     <div class="text-black rounded flex items-center px-2 justify-center  gap-1">
                         <p>Welcome, </p>

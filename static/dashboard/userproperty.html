@@ -50,7 +50,111 @@
         </div>
     </div>
     <script>
-        document.addEventListener("DOMContentLoaded", function () { checkToken(); });
+        function truncateString(str, maxLength, useEllipse = true) {
+            if (str.length > maxLength) {
+                return str.slice(0, maxLength) + (useEllipse ? '...' : '');
+            }
+            return str
+        }
+
+
+
+        function formatCustomNumber(number) {
+            // Convert number to string
+            const numberString = number.toString();
+
+            // Separate integer and decimal parts
+            const [integerPart, decimalPart] = numberString.split(".");
+
+            // Add commas based on Nepalese numbering system grouping
+            const formattedInteger = integerPart
+                .split("")
+                .reverse()
+                .map((digit, index) => {
+                    // Adding commas according to the Nepalese numbering system
+                    if (index % 2 === 0 && index !== 0) {
+                        return `,${digit}`;
+                    }
+                    return digit;
+                })
+                .reverse()
+                .join("");
+
+            const newFormattedNumber = formattedInteger.charAt(0) === "," ? formattedInteger.slice(1) : formattedInteger;
+
+            // Combine the formatted integer and decimal parts
+            const formattedNumber = decimalPart ? `${newFormattedNumber}.${decimalPart}` : newFormattedNumber;
+
+            // Return the formatted string without space or comma between the currency symbol and the number
+            return `${formattedNumber}`;
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            checkToken();
+            const properties = document.querySelectorAll('.property');
+
+            properties.forEach(property => {
+                const price = property.getAttribute('data-price');
+                const description = property.getAttribute('data-description');
+
+                // Apply JavaScript functions after the page has loaded
+                property.querySelector('.price').textContent = formatCustomNumber(price);
+                property.querySelector('.description').textContent = truncateString(description, 100);
+
+                // You can add more JavaScript functionality here if needed
+            });
+        });
+        async function makerent() {
+            const data = document.getElementById("rentbutton").getAttribute("data")
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            try {
+                const response = await fetch("/api/makerent", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        property_id: data
+                    })
+                });
+                const res = await response.json()
+                if (res.success) {
+                    console.log("success")
+                    window.location.reload();
+                } else {
+                    window.location.href = "/login";
+                    console.log("failed")
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
+        async function makeavailable() {
+            const data = document.getElementById("availablebutton").getAttribute("data")
+            const token = JSON.parse(localStorage.getItem("Authorization"))
+            try {
+                const response = await fetch("/api/makeavailable", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        property_id: data
+                    })
+                });
+                const res = await response.json()
+                if (res.success) {
+                    console.log("success")
+                    window.location.reload();
+                } else {
+                    window.location.href = "/login";
+                    console.log("failed")
+                }
+            } catch (error) {
+                console.log(error)
+            }
+        }
 
         function handlesuccess(res) {
             const loginStatus = document.getElementById("loginstatus")
@@ -117,44 +221,7 @@
 
 
 
-        function truncateString(str, maxLength, useEllipse = true) {
-            if (str.length > maxLength) {
-                return str.slice(0, maxLength) + (useEllipse ? '...' : '');
-            }
-            return str
-        }
 
-
-
-        function formatCustomNumber(number) {
-            // Convert number to string
-            const numberString = number.toString();
-
-            // Separate integer and decimal parts
-            const [integerPart, decimalPart] = numberString.split(".");
-
-            // Add commas based on Nepalese numbering system grouping
-            const formattedInteger = integerPart
-                .split("")
-                .reverse()
-                .map((digit, index) => {
-                    // Adding commas according to the Nepalese numbering system
-                    if (index % 2 === 0 && index !== 0) {
-                        return `,${digit}`;
-                    }
-                    return digit;
-                })
-                .reverse()
-                .join("");
-
-            const newFormattedNumber = formattedInteger.charAt(0) === "," ? formattedInteger.slice(1) : formattedInteger;
-
-            // Combine the formatted integer and decimal parts
-            const formattedNumber = decimalPart ? `${newFormattedNumber}.${decimalPart}` : newFormattedNumber;
-
-            // Return the formatted string without space or comma between the currency symbol and the number
-            return `${formattedNumber}`;
-        }
     </script>
 </body>
 

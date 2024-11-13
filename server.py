@@ -4,15 +4,18 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import mimetypes
 import string
+from threading import Timer
 import mysql.connector
 from urllib.parse import urlparse, parse_qs
 from hashlib import sha256
-import http.cookies
 import urllib
 import jwt
 import os
 import cgi
 import random
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 # Database configuration
 db_config = {
@@ -24,8 +27,33 @@ db_config = {
 }
 
 
+def send_email(recipient_email, subject, body):
+    # Setup the MIME
+    sender_email = "gharbahaal@gmail.com"
+    sender_password = "ncbu orbh abfy gxhs"
+    message = MIMEMultipart()
+    message["From"] = sender_email
+    message["To"] = recipient_email
+    message["Subject"] = subject
+
+    # Add body to email
+    message.attach(MIMEText(body, "plain"))
+
+    try:
+        # Connect to the server
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()  # Enable security
+            server.login(sender_email, sender_password)  # Login to the SMTP server
+            text = message.as_string()  # Convert the message to a string
+            server.sendmail(sender_email, recipient_email, text)  # Send the email
+            print("Email sent successfully!")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
 # Establish database connection
 def get_db_connection():
+    print("success")
     return mysql.connector.connect(**db_config)
 
 
@@ -49,6 +77,42 @@ class RequestHandler(BaseHTTPRequestHandler):
             with open("static/dashboard/basiclayout.html", "r") as file:
                 html_content = file.read()
             self.wfile.write(html_content.encode("utf-8"))
+
+        elif self.path.startswith("/api/checkreviewstatus"):
+            print(self.headers)
+            product_id = int(str(self.headers.get("product_id")))
+            connection = get_db_connection()
+            cursor = connection.cursor()
+            token = self.headers.get("Authorization").split(" ")[1]
+            verify = self.decode_token(token)
+            if verify.get("error"):
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"success": False, "message": "Token not found or expired"}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+            else:
+                user_id = verify.get("user_id")
+                cursor.execute(
+                    "Select * from reviews where property_id = %s and tenant_id = %s",
+                    (
+                        product_id,
+                        user_id,
+                    ),
+                )
+                result = cursor.fetchone()
+                if result:
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    response = {"success": True, "message": "Review already exists"}
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
+                else:
+                    self.send_response(200)
+                    self.send_header("Content-type", "application/json")
+                    self.end_headers()
+                    response = {"success": False, "message": "Can post review"}
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
 
         elif self.path.startswith("/api/properties"):
             self._set_headers(content_type="application/json")
@@ -154,6 +218,20 @@ class RequestHandler(BaseHTTPRequestHandler):
 
             if property_data:
                 html_content = self.render_property_details(
+                    property_data, property_reviews
+                )
+                self.wfile.write(html_content.encode("utf-8"))
+            else:
+                with open("static/pagenotfound/pagenotfound.html", "r") as file:
+                    html_content = file.read()
+                self.wfile.write(html_content.encode("utf-8"))
+        elif self.path.startswith("/api/userproperty"):
+            self._set_headers(content_type="text/html")
+            property_id = self.path.split("/")[-1]
+            property_data, property_reviews = self.get_property_details(property_id)
+
+            if property_data:
+                html_content = self.render_user_property_details(
                     property_data, property_reviews
                 )
                 self.wfile.write(html_content.encode("utf-8"))
@@ -296,6 +374,55 @@ class RequestHandler(BaseHTTPRequestHandler):
                 print(str(e))
                 self._set_headers(content_type="text/html")
 
+        elif self.path.startswith("/userrented/"):
+            try:
+                userid = self.path.split("/")[-1]
+                connection = get_db_connection()
+                cursor = connection.cursor(dictionary=True)
+                cursor.execute(
+                    "SELECT * FROM properties WHERE status = 'rented' AND tenant_id = %s",
+                    (userid,),
+                )
+                html_string = f""
+                properties = cursor.fetchall()
+                if properties:
+                    for property in properties:
+                        print(property)
+                        html_string += f"""
+                        <div class="bg-violet-50 hover:bg-violet-200 min-h-96 max-h-96 cursor-pointer hov flex flex-col p-4 m-1 shadow-md rounded-md">
+                            <div class="flex justify-between">
+                                <h2 class="text-xl">{property['title']}</h2>
+                                <p class="font-mono text-sm capitalize">{property['status']}</p>
+                            </div>
+                            <div class="py-2 flex justify-center items-center">
+                                <img src="../../{property['thumbnail']}" class="object-cover min-h-44 max-h-44 w-full">
+                            </div>
+                            <small class="text-[16px] text-left">Buy it at NPR. <script>document.write(formatCustomNumber({property['price']}));</script></small>
+                            <small class="capitalize text-left">Located in {property['street_name']}, {property['city']}, {property['state']}</small>
+                            <small class="text-left capitalize"><script>document.write(truncateString('{property.get('description', '')}', 100, true));</script></small>
+                            <a href="/api/details/{property['id']}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                            
+                        </div>
+                        """
+                    with open("static/dashboard/userproperty.html", "r") as file:
+                        html_content = file.read()
+                    html_content = html_content.replace("{{results}}", html_string)
+                    self._set_headers(content_type="text/html")
+                    self.end_headers()
+                    self.wfile.write(html_content.encode("utf-8"))
+                else:
+                    html_string += """<p class="text-bold text-lg">You do not have any rented properties</p>"""
+                    with open("static/dashboard/userproperty.html", "r") as file:
+                        html_content = file.read()
+                    html_content = html_content.replace("{{results}}", html_string)
+                    self._set_headers(content_type="text/html")
+                    self.end_headers()
+                    self.wfile.write(html_content.encode("utf-8"))
+
+            except Exception as e:
+                print(str(e))
+                self._set_headers(content_type="text/html")
+
         elif self.path.startswith("/userrents/"):
             try:
                 userid = self.path.split("/")[-1]
@@ -322,6 +449,9 @@ class RequestHandler(BaseHTTPRequestHandler):
                         <small class="capitalize text-left">Located in {property['street_name']}, {property['city']}, {property['state']}</small>
                         <small class="text-left capitalize"><script>document.write(truncateString('{property.get('description', '')}', 100, true));</script></small>
                         <a href="/api/details/{property['id']}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                        <div class="p-2">
+                        <button data="{property['id']}" id="availablebutton" onclick="makeavailable()" class="rounded-md hover:cursor-pointer hover:text-white hover:bg-green-500 text-green-500 text-lg">Make it Available</a>
+                        </div>
                     </div>
                     """
                 with open("static/dashboard/userproperty.html", "r") as file:
@@ -334,6 +464,60 @@ class RequestHandler(BaseHTTPRequestHandler):
             except Exception as e:
                 print(str(e))
                 self._set_headers(content_type="text/html")
+
+        elif self.path.startswith("/booked/"):
+            try:
+                userid = self.path.split("/")[-1]
+                connection = get_db_connection()
+                cursor = connection.cursor(dictionary=True)
+                cursor.execute(
+                    "SELECT * FROM properties WHERE status = 'booked' AND tenant_id = %s",
+                    (userid,),
+                )
+                properties = cursor.fetchall()
+                print(len(properties))
+                html_string = f""
+                if properties:
+                    for property in properties:
+                        print("\n")
+                        html_string += f"""
+                        <div class="property bg-violet-50 hover:bg-violet-200 min-h-96 max-h-96 cursor-pointer hov flex flex-col p-4 m-1 shadow-md rounded-md">
+                            <div class="flex justify-between">
+                                <h2 class="text-xl">{property['title']}</h2>
+                                <p class="font-mono text-sm capitalize">{property['status']}</p>
+                            </div>
+                            <div class="py-2 flex justify-center items-center">
+                                <img src="../../{property['thumbnail']}" class="object-cover min-h-44 max-h-44 w-full">
+                            </div>
+                            <small class="text-[16px] text-left">Buy it at NPR. {property['price']}</small>
+                            <small class="capitalize text-left">Located in {property['street_name']}, {property['city']}, {property['state']}</small>
+                            <small class="text-left capitalize">{property.get('description')}</small>
+                            <a href="/api/userproperty/{property['id']}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                        </div>
+                        """
+                    with open("static/dashboard/userproperty.html", "r") as file:
+                        html_content = file.read()
+                    html_content = html_content.replace("{{results}}", html_string)
+                    self._set_headers(content_type="text/html")
+                    self.end_headers()
+                    self.wfile.write(html_content.encode("utf-8"))
+                else:
+                    html_string = """
+                    
+                    <p class="text-bold text-lg"> You do not have any booked properties</p>
+                    
+                    """
+                    with open("static/dashboard/userproperty.html", "r") as file:
+                        html_content = file.read()
+                    html_content = html_content.replace("{{results}}", html_string)
+                    self._set_headers(content_type="text/html")
+                    self.end_headers()
+                    self.wfile.write(html_content.encode("utf-8"))
+
+            except Exception as e:
+                print(str(e))
+                self._set_headers(content_type="text/html")
+
         elif self.path.startswith("/userbooked/"):
             try:
                 userid = self.path.split("/")[-1]
@@ -349,7 +533,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 for property in properties:
                     print("\n")
                     html_string += f"""
-                    <div class="bg-violet-50 hover:bg-violet-200 min-h-96 max-h-96 cursor-pointer hov flex flex-col p-4 m-1 shadow-md rounded-md">
+                    <div class="property bg-violet-50 hover:bg-violet-200 min-h-96 max-h-96 cursor-pointer hov flex flex-col p-4 m-1 shadow-md rounded-md">
                         <div class="flex justify-between">
                             <h2 class="text-xl">{property['title']}</h2>
                             <p class="font-mono text-sm capitalize">{property['status']}</p>
@@ -357,10 +541,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                         <div class="py-2 flex justify-center items-center">
                             <img src="../../{property['thumbnail']}" class="object-cover min-h-44 max-h-44 w-full">
                         </div>
-                        <small class="text-[16px] text-left">Buy it at NPR. <script>document.write(formatCustomNumber({property['price']}));</script></small>
+                        <small class="text-[16px] text-left">Buy it at NPR. {property['price']}</small>
                         <small class="capitalize text-left">Located in {property['street_name']}, {property['city']}, {property['state']}</small>
-                        <small class="text-left capitalize"><script>document.write(truncateString('{property.get('description', '')}', 100, true));</script></small>
-                        <a href="/api/details/{property['id']}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                        <small class="text-left capitalize">{property.get('description')}</small>
+                        <a href="/api/userproperty/{property['id']}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                        <div class="flex justify-between py-4">
+                        <button data="{property['id']}" id="rentbutton" onclick="makerent()" class="rounded-md hover:cursor-pointer hover:text-white hover:bg-green-500 text-green-500 text-lg">Approve for Rent</button>
+                        <button data="{property['id']}" id="availablebutton" onclick="makeavailable()" class="rounded-md hover:cursor-pointer hover:text-white hover:bg-green-500 text-green-500 text-lg">Make it Available</a>
+
+                        </div>
                     </div>
                     """
                 with open("static/dashboard/userproperty.html", "r") as file:
@@ -391,6 +580,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             email = data.get("email")
             password = data.get("password")
             username = data.get("username")
+            number = data.get("number")
             role = data.get("role")
             if email and password and username and role:
                 if role.lower() == "admin":
@@ -405,8 +595,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 try:
                     cursor.execute(
-                        "INSERT INTO users (username,email, password, role) VALUES (%s,%s,%s, %s)",
-                        (username, email, hashed_password, role),
+                        "INSERT INTO users (username,number,email, password, role) VALUES (%s,%s,%s,%s, %s)",
+                        (username, number, email, hashed_password, role),
                     )
                     connection.commit()
                     self.send_response(200)
@@ -427,6 +617,70 @@ class RequestHandler(BaseHTTPRequestHandler):
                 finally:
                     cursor.close()
                     connection.close()
+
+        elif self.path.startswith("/api/makerent"):
+            content_length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data)
+            property_id = data.get("property_id")
+            token = self.headers.get("Authorization").split(" ")[1]
+            verify = self.decode_token(token)
+            if verify.get("error"):
+                self.send_response(400)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"success": False, "message": "token missing"}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+            else:
+                status = "rented"
+                connection = get_db_connection()
+                cursor = connection.cursor(dictionary=True)
+
+                cursor.execute(
+                    "UPDATE properties SET status = %s WHERE id = %s",
+                    (
+                        status,
+                        property_id,
+                    ),
+                )
+                connection.commit()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"success": True, "message": "Made Rent Successfully"}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+        elif self.path.startswith("/api/makeavailable"):
+            content_length = int(self.headers["Content-Length"])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data)
+            property_id = data.get("property_id")
+            token = self.headers.get("Authorization").split(" ")[1]
+            verify = self.decode_token(token)
+            if verify.get("error"):
+                self.send_response(400)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"success": False, "message": "token missing"}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+            else:
+                status = "available"
+                connection = get_db_connection()
+                cursor = connection.cursor(dictionary=True)
+
+                cursor.execute(
+                    "UPDATE properties SET status = %s, booked_at = NULL, tenant_id=NULl WHERE id = %s",
+                    (
+                        status,
+                        property_id,
+                    ),
+                )
+                connection.commit()
+                self.send_response(200)
+                self.send_header("Content-type", "application/json")
+                self.end_headers()
+                response = {"success": True, "message": "Made Rent Successfully"}
+                self.wfile.write(json.dumps(response).encode("utf-8"))
+
         elif self.path == "/api/checkbookstatus":
             content_length = int(self.headers["Content-Length"])
             data = json.loads(self.rfile.read(content_length))
@@ -545,7 +799,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if property:
                     status = "available"
                     cursor.execute(
-                        "update properties set tenant_id = NULL, status = %s where id = %s and tenant_id = %s",
+                        "update properties set tenant_id = NULL,booked_at = NULL, status = %s where id = %s and tenant_id = %s",
                         (status, property["id"], userid),
                     )
                     connection.commit()
@@ -560,11 +814,31 @@ class RequestHandler(BaseHTTPRequestHandler):
                     self.wfile.write(json.dumps(response).encode("utf-8"))
                 else:
                     status = "booked"
+                    booked_at = datetime.datetime.now()
                     cursor.execute(
-                        "update properties set tenant_id = %s, status = %s where id = %s",
-                        (userid, status, product_id),
+                        "update properties set tenant_id = %s,booked_at = %s, status = %s where id = %s",
+                        (userid, booked_at, status, product_id),
                     )
                     connection.commit()
+                    cursor.execute(
+                        """SELECT 
+    owner.username AS owner_username, 
+    owner.email AS owner_email, 
+    tenant.username AS tenant_username,
+    tenant.email AS tenant_email
+FROM properties p
+JOIN users owner ON owner.id = p.owner_id
+LEFT JOIN users tenant ON tenant.id = p.tenant_id
+WHERE p.id =%s;""",
+                        (product_id,),
+                    )
+                    result = cursor.fetchone()
+                    print(result.get("owner_email"))
+                    send_email(
+                        result.get("owner_email"),
+                        f"Your Property has been Booked",
+                        f"Your Property has been booked by {result.get("tenant_username")}. You can email him at {result.get("tenant_email")} for further negotiation.",
+                    )
                     self.send_response(200)
                     self.send_header("Content-type", "application/json")
                     self.end_headers()
@@ -641,13 +915,11 @@ class RequestHandler(BaseHTTPRequestHandler):
             verify = self.decode_token(token)
             if verify.get("error"):
                 self.send_response(400)
-                self.send_header("Content-type", "application/json")
+                self.send_header("Content-type", "text/html")
                 self.end_headers()
-                response = {
-                    "message": "Not logged in",
-                    "success": False,
-                }
-                self.wfile.write(json.dumps(response).encode("utf-8"))
+                with open("static/loginpage/login.html", "r") as file:
+                    html_content = file.read()
+                self.wfile.write(html_content.encode("utf-8"))
             else:
                 tenant_id = verify.get("user_id")
                 rating = data.get("rating")
@@ -685,6 +957,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                         "SELECT password FROM users WHERE username = %s", (username,)
                     )
                     result = cursor.fetchone()
+                    print(result[0])
                     if result and result[0] == hashed_password:
                         print("Login successful for user:", username)
                         self.send_response(200)
@@ -726,7 +999,7 @@ class RequestHandler(BaseHTTPRequestHandler):
                 }
                 self.wfile.write(json.dumps(response).encode("utf-8"))
 
-        elif self.path == "/api/addproperty":
+        elif self.path.startswith("/api/updateproperty"):
             ctype, pdict = cgi.parse_header(self.headers.get("content-type"))
             if ctype == "multipart/form-data":
                 pdict["boundary"] = bytes(pdict["boundary"], "utf-8")
@@ -748,6 +1021,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
                 owner_id = token.get("user_id")
                 title = fields.get("title")[0]
+                property_id = int(self.path.split("/")[-1])
                 description = fields.get("description")[0]
                 house_number = fields.get("house_number")[0]
                 street_name = fields.get("street_name")[0]
@@ -765,7 +1039,6 @@ class RequestHandler(BaseHTTPRequestHandler):
                 image_paths = {}
                 upload_dir = "propertyimages/"
                 os.makedirs(upload_dir, exist_ok=True)
-                print(f"this is thumbnail{fields["thumbnail"]}")
                 for field in ["thumbnail", "image1", "image2", "image3", "image4"]:
                     if fields.get(field):
                         file_item = fields[field][0]
@@ -794,9 +1067,12 @@ class RequestHandler(BaseHTTPRequestHandler):
                             f.write(file_item)  # Write the file content directly
 
                         image_paths[field] = file_path
+                    else:
+                        continue
 
                 # Save to database
-                self.add_property_to_db(
+                self.edit_property_to_db(
+                    property_id,
                     owner_id,
                     title,
                     description,
@@ -820,6 +1096,104 @@ class RequestHandler(BaseHTTPRequestHandler):
                 response = {"message": "Property added successfully", "success": True}
                 self.wfile.write(json.dumps(response).encode("utf-8"))
 
+        elif self.path == "/api/addproperty":
+            ctype, pdict = cgi.parse_header(self.headers.get("content-type"))
+            if ctype == "multipart/form-data":
+                pdict["boundary"] = bytes(pdict["boundary"], "utf-8")
+                fields = cgi.parse_multipart(self.rfile, pdict)
+                raw_token = self.headers.get("Authorization")
+                if not raw_token:
+                    self._set_headers(404, "application/json")
+                    response = {"message": "Token Missing", "success": False}
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
+                # Decode token
+                token = self.decode_token(raw_token.split(" ")[1])
+                if token.get("error"):
+                    self._set_headers(status_code=404, content_type="application/json")
+                    response = {
+                        "message": "Token missing. Please Relogin",
+                        "success": False,
+                    }
+                    return self.wfile.write(json.dumps(response).encode("utf-8"))
+
+                else:
+                    owner_id = token.get("user_id")
+                    title = fields.get("title")[0]
+                    description = fields.get("description")[0]
+                    house_number = fields.get("house_number")[0]
+                    street_name = fields.get("street_name")[0]
+                    country = fields.get("country")[0]
+                    city = fields.get("city")[0]
+                    state = fields.get("state")[0]
+                    zip_code = fields.get("zip_code")[0]
+                    price = float(fields.get("price")[0])
+                    status = (
+                        fields.get("status")[0] if fields.get("status") else "available"
+                    )
+                    views = 0
+
+                    # Save images
+                    image_paths = {}
+                    upload_dir = "propertyimages/"
+                    os.makedirs(upload_dir, exist_ok=True)
+                    print(f"this is thumbnail{fields["thumbnail"]}")
+                    for field in ["thumbnail", "image1", "image2", "image3", "image4"]:
+                        if fields.get(field):
+                            file_item = fields[field][0]
+
+                            # Manually set the extension if you know it
+                            file_extension = ".jpg"  # Set a default extension; you can change it as needed
+
+                            # Or use the content type if available
+                            content_type = mimetypes.guess_extension(
+                                file_item
+                            )  # Assuming fields[field] has a content_type attribute
+                            if content_type:
+                                if "jpeg" in content_type:
+                                    file_extension = ".jpg"
+                                elif "png" in content_type:
+                                    file_extension = ".png"
+                                # Add other content types if needed
+
+                            print(f"This is the image name: {field}")
+
+                            file_path = os.path.join(
+                                upload_dir,
+                                f"{owner_id}_{self.generate_random_string(10)}{file_extension}",
+                            )  # Include the extension
+                            with open(file_path, "wb") as f:
+                                f.write(file_item)  # Write the file content directly
+
+                            image_paths[field] = file_path
+
+                    # Save to database
+                    self.add_property_to_db(
+                        owner_id,
+                        title,
+                        description,
+                        house_number,
+                        street_name,
+                        country,
+                        city,
+                        state,
+                        zip_code,
+                        price,
+                        status,
+                        views,
+                        image_paths.get("thumbnail"),
+                        image_paths.get("image1"),
+                        image_paths.get("image2"),
+                        image_paths.get("image3"),
+                        image_paths.get("image4"),
+                    )
+
+                    self._set_headers(status_code=201, content_type="application/json")
+                    response = {
+                        "message": "Property added successfully",
+                        "success": True,
+                    }
+                    self.wfile.write(json.dumps(response).encode("utf-8"))
+
         else:
             self.send_response(404)
             response = {"message": "Not Found"}
@@ -829,7 +1203,21 @@ class RequestHandler(BaseHTTPRequestHandler):
         try:
             connection = get_db_connection()
             cursor = connection.cursor(dictionary=True)
-            sql_select_query = "SELECT * FROM properties WHERE id = %s"
+            sql_select_query = """SELECT 
+    p.*,
+    owner.username AS owner_name,
+    owner.email AS owner_email,
+    tenant.username AS tenant_name,
+    tenant.email AS tenant_email
+FROM 
+    properties p
+JOIN 
+    users owner ON p.owner_id = owner.id
+LEFT JOIN 
+    users tenant ON p.tenant_id = tenant.id
+WHERE 
+    p.id = %s;
+"""
             cursor.execute(sql_select_query, (property_id,))
             property_data = cursor.fetchone()
             # get_reviews = "SELECT * FROM reviews WHERE property_id = %s"
@@ -878,6 +1266,98 @@ class RequestHandler(BaseHTTPRequestHandler):
             print(f"Failed to retrieve property details from MySQL table: {e}")
             return None
 
+    def render_user_property_details(self, property_data, property_reviews):
+        print(property_data)
+        with open("static/details/userpropertydetail.html", "r") as file:
+            html_template = file.read()
+        html_content = html_template.replace("{{title}}", property_data["title"])
+        html_content = html_content.replace(
+            "{{description}}", property_data["description"]
+        )
+        html_content = html_content.replace("{{propertyid}}", str(property_data["id"]))
+        html_content = html_content.replace(
+            "{{house_number}}", str(property_data["house_number"])
+        )
+        html_content = html_content.replace(
+            "{{street_name}}", property_data["street_name"]
+        )
+        html_content = html_content.replace("{{country}}", property_data["country"])
+        html_content = html_content.replace("{{city}}", property_data["city"])
+        html_content = html_content.replace("{{state}}", property_data["state"])
+        html_content = html_content.replace("{{zip_code}}", property_data["zip_code"])
+        html_content = html_content.replace("{{price}}", str(property_data["price"]))
+        if (
+            property_data["status"].lower() == "booked"
+            or property_data["status"].lower() == "rented"
+        ):
+            html_content = html_content.replace(
+                "{{status}}",
+                f"{property_data["status"]} by {property_data["tenant_name"]}",
+            )
+        else:
+            html_content = html_content.replace("{{status}}", property_data["status"])
+
+        html_content = html_content.replace("{{views}}", str(property_data["views"]))
+        images_html = ""
+        image_urls = [property_data.get(f"image{i}", "") for i in range(1, 4)]
+        for image_url in image_urls:
+            if image_url:  # Only add non-empty images
+                images_html += f'<img src="/{image_url}" alt="Property Image" class="rounded-md border-black" onclick="changeImage(\'{image_url}\')" style="width:200px;height:150px;">\n'
+        image1html = ""
+        image1html += f'<img src="/{image_urls[0]}" class="rounded-md border-black" alt="Property Image" id="mainImage" style="width:400px;height:300px;">'
+
+        # Replace the images placeholder with the dynamically generated HTML
+        html_content = html_content.replace("{{images}}", images_html)
+        html_content = html_content.replace("{{firstimage}}", image1html)
+        reviews = ""
+        total_rates = 0
+        total_ratings = 0
+        for review in property_reviews:
+            print(review)
+            total_rates = total_rates + review.get("rating")
+            total_ratings += 1
+            star = ""
+            numstars = 0
+            for _ in range(review.get("rating")):
+                star += "<span>&#9733;</span>"
+                numstars += 1
+            reviews += f"""
+                    <div class="max-w-md w-full p-4 bg-white shadow-lg rounded-lg border border-gray-200">
+                            <div class="flex space-x-2 justify-start" id="review_heading">
+                                
+                                <!-- Rating Stars -->
+                                    <div class="flex text-yellow-500">
+                                        {star}
+                                    </div>
+                                    <p class="text-sm text-gray-500">{numstars} out of 5 stars</p>
+                            </div>
+
+                            <!-- Review Description -->
+                            <div class="mt-3 border p-2 rounded-lg border-gray-200">
+                                <p class="text-gray-700 text-base">{review.get("comment")}</p>
+                            </div>
+
+                            <!-- Reviewer Info -->
+                            <div class="mt-4 flex items-center space-x-3">
+                                <div>
+                                    <p class="text-sm font-semibold">{review.get("username")}</p>
+                                    <p class="text-sm font-semibold">{review.get("email")}</p>
+                                    <p class="text-xs text-gray-400">Reviewed on: {review.get("review_created_at")}</p>
+                                </div>
+                            </div>
+                        </div>
+                """
+        html_content = html_content.replace("{{reviews_list}}", reviews)
+        if total_ratings == 0:
+            html_content = html_content.replace("{{average_rating}}", str(0))
+        else:
+            average_rating = round(total_rates / total_ratings, 2)
+            html_content = html_content.replace(
+                "{{average_rating}}", str(average_rating)
+            )
+        html_content = html_content.replace("{{no_of_ratings}}", str(total_ratings))
+        return html_content
+
     def render_property_details(self, property_data, property_reviews):
         print(property_reviews)
         with open("static/details/propertydetails.html", "r") as file:
@@ -904,9 +1384,9 @@ class RequestHandler(BaseHTTPRequestHandler):
         image_urls = [property_data.get(f"image{i}", "") for i in range(1, 4)]
         for image_url in image_urls:
             if image_url:  # Only add non-empty images
-                images_html += f'<img src="/{image_url}" alt="Property Image" class="rounded-3xl border-2 border-black" onclick="changeImage(\'{image_url}\')" style="width:200px;height:150px;">\n'
+                images_html += f'<img src="/{image_url}" alt="Property Image" class="rounded-md border-black" onclick="changeImage(\'{image_url}\')" style="width:200px;height:150px;">\n'
         image1html = ""
-        image1html += f'<img src="/{image_urls[0]}" class="rounded-3xl border-2 border-black" alt="Property Image" id="mainImage" style="width:400px;height:300px;">'
+        image1html += f'<img src="/{image_urls[0]}" class="rounded-md border-black" alt="Property Image" id="mainImage" style="width:400px;height:300px;">'
 
         # Replace the images placeholder with the dynamically generated HTML
         html_content = html_content.replace("{{images}}", images_html)
@@ -1045,11 +1525,14 @@ class RequestHandler(BaseHTTPRequestHandler):
         cursor = connection.cursor(dictionary=True)
         cursor.execute(f"SELECT * FROM properties WHERE owner_id = {userid}")
         properties = cursor.fetchall()
+        cursor.execute(f"SELECT * FROM properties WHERE tenant_id = {userid}")
+        tenantmode = cursor.fetchall()
         views = 0
         available = 0
         rented = 0
         booked = 0
-        totalproperty = len(properties)
+        userbooked = 0
+        userrented = 0
         for property in properties:
             for key, value in property.items():
                 if isinstance(value, decimal.Decimal):
@@ -1061,14 +1544,30 @@ class RequestHandler(BaseHTTPRequestHandler):
                 if key.lower() == "status" and value.lower() == "booked":
                     booked += 1
                 if key.lower() == "status" and value.lower() == "rented":
-                    rented += 1
+                    rented += 1.0
+        for properties in tenantmode:
+            for key, value in properties.items():
+                if isinstance(value, decimal.Decimal):
+                    properties[key] = float(value)
+            if (
+                properties.get("status").lower() == "booked"
+                and properties.get("tenant_id") == userid
+            ):
+                userbooked += 1
+            if (
+                properties.get("status").lower() == "rented"
+                and properties.get("tenant_id") == userid
+            ):
+                userrented += 1
+
         return {
             "views": views,
             "available": available,
             "booked": booked,
-            "total": totalproperty,
             "rented": rented,
             "user_id": userid,
+            "user_booked": userbooked,
+            "user_rented": userrented,
         }
 
     def get_trending_from_db(self, page=1, page_size=6):
@@ -1286,6 +1785,72 @@ class RequestHandler(BaseHTTPRequestHandler):
                 connection.close()
                 print("MySQL connection is closed")
 
+    def edit_property_to_db(
+        self,
+        property_id,
+        owner_id,
+        title,
+        description,
+        house_number,
+        street_name,
+        country,
+        city,
+        state,
+        zip_code,
+        price,
+        status,
+        views,
+        thumbnail,
+        image1,
+        image2,
+        image3,
+        image4,
+    ):
+        try:
+            # Establish database connection
+            connection = get_db_connection()
+
+            if connection.is_connected():
+                cursor = connection.cursor()
+
+                # Insert property details into the properties table
+                insert_query = """
+                UPDATE properties SET title = %s, description = %s, house_number = %s,street_name = %s, city = %s, state = %s, zip_code = %s,country = %s, price = %s, status = %s,views = %s, thumbnail = %s, image1 = %s, image2 = %s, image3 = %s, image4 = %s 
+                WHERE id = %s AND owner_id = %s
+                """
+                record = (
+                    title,
+                    description,
+                    house_number,
+                    street_name,
+                    city,
+                    state,
+                    zip_code,
+                    country,
+                    price,
+                    status,
+                    views,
+                    thumbnail,
+                    image1,
+                    image2,
+                    image3,
+                    image4,
+                    property_id,
+                    owner_id,
+                )
+                cursor.execute(insert_query, record)
+                connection.commit()
+
+                print("Property inserted successfully into properties table")
+
+        except Exception as e:
+            print("Error while connecting to MySQL", str(e))
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+                print("MySQL connection is closed")
+
     def generate_random_string(self, length=10):
         letters_and_digits = string.ascii_letters + string.digits
         random_string = "".join(
@@ -1298,10 +1863,62 @@ class RequestHandler(BaseHTTPRequestHandler):
 # add_property_to_db(owner_id, title, description, address, city, state, zip_code, price, status, thumbnail, image1, image2, image3, image4)
 
 
+def periodic_task():
+    print(f"Periodic task is running... at {datetime.datetime.now()}")
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+    status = "booked"
+    cursor.execute("Select * FROM properties where status = %s", (status,))
+    result = cursor.fetchall()
+    today = datetime.datetime.today().date()
+    print(today)
+    for properties in result:
+        if not properties.get("booked_at") == None:
+            if (today - properties.get("booked_at").date()).days > 7:
+                status = "available"
+                cursor.execute(
+                    """
+                        SELECT 
+    owner.username AS owner_username, 
+    owner.email AS owner_email, 
+    tenant.username AS tenant_username,
+    tenant.email AS tenant_email
+FROM properties p
+JOIN users owner ON owner.id = p.owner_id
+LEFT JOIN users tenant ON tenant.id = p.tenant_id
+WHERE p.id = %s;
+
+                    """,
+                    (properties["id"],),
+                )
+                result = cursor.fetchone()
+
+                cursor.execute(
+                    "update properties set tenant_id = NULL,booked_at = NULL, status = %s where id = %s",
+                    (status, properties["id"]),
+                )
+                send_email(
+                    recipient_email=result.get("owner_email"),
+                    subject=f"Property Status changed to Available",
+                    body=f"Your Property status has been changed to available as it has been booked by {result.get("tenant_username")} for more than 7 days and no action has been performed on it.",
+                )
+                send_email(
+                    recipient_email=result.get("tenant_email"),
+                    subject="Your Booked Property has been cancelled",
+                    body=f"The property you had booked has not been finalized. So in order to make it accessed by other users it has been cancelled and made available",
+                )
+                connection.commit()
+                connection.close()
+                connection.disconnect()
+
+    Timer(43200, periodic_task).start()
+
+
 def run():
     server_address = ("", 7000)
     httpd = HTTPServer(server_address, RequestHandler)
     print("Server is running at http://localhost:7000")
+    # periodic_task()
     httpd.serve_forever()
 
 

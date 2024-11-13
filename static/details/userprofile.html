@@ -122,10 +122,18 @@
                     <div class="w-[350px] flex flex-col py-8 items-center justify-center border rounded-3xl">
                           <div class="flex items-center justify-center">
                             <span class="material-symbols-outlined pb-[6px] pr-[3px]">
-                            real_estate_agent
+                            bookmark
                             </span>
-                            <a class="mb-2 font-bold cursor-pointer" href="/userallproperties/${contents.user_id}">Total Properties</a></div>
-                          <div class="flex items-center justify-center">${contents.total}</div>
+                            <a class="mb-2 font-bold cursor-pointer" href="/booked/${contents.user_id}">User Booked</a></div>
+                          <div class="flex items-center justify-center">${contents.user_booked}</div>
+                    </div>
+                    <div class="w-[350px] flex flex-col py-8 items-center justify-center border rounded-3xl">
+                          <div class="flex items-center justify-center">
+                            <span class="material-symbols-outlined pb-[6px] pr-[3px]">
+                            apartment
+                            </span>
+                            <a class="mb-2 font-bold cursor-pointer" href="/userrented/${contents.user_id}">User Rented</a></div>
+                          <div class="flex items-center justify-center">${contents.user_rented}</div>
                     </div>
                     
                     
@@ -185,7 +193,7 @@
                             <small class="text-[16px] text-left">Buy it at NPR. ${formatCustomNumber(contents[i].price)}</small>
                             <small class="capitalize text-left ">Located in ${contents[i].street_name}, ${contents[i].city}, ${contents[i].state}</small>
                             <small class="text-left capitalize">${contents[i].description ? truncateString(contents[i].description, 100, true) : ""}</small>
-                            <a href="/api/details/${contents[i].id}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
+                            <a href="/api/userproperty/${contents[i].id}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> View More</a>
                             <a href="/api/editproperty/${contents[i].id}" class="pt-2 text-center text-[14px] hover:underline underline-offset-2 hover:text-blue-800"> Edit</a>
 
                         </div>

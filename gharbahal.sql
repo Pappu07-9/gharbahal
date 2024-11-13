@@ -3,9 +3,10 @@ USE gharbahal;
 CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    number INT UNIQUE,
     password VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
-    role ENUM('tenant', 'owner','admin') NOT NULL,
+    role ENUM('tenant', 'owner') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -25,6 +26,7 @@ CREATE TABLE properties (
     type ENUM('house','flat','room') DEFAULT 'house',
     views INT,
     tenant_id INT,
+    booked_at DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     thumbnail VARCHAR(255),
     image1 VARCHAR(255),

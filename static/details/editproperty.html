@@ -20,8 +20,7 @@
                     <option value="room">Room</option>
                     <option value="flat">Flat</option>
                 </select>
-                <input type="text" required name="city" class="h-10 w-3/5 pl-12 bg-green-100 rounded"
-                    placeholder="Enter City">
+                <input type="text" name="city" class="h-10 w-3/5 pl-12 bg-green-100 rounded" placeholder="Enter City">
                 <button type="submit"
                     class="bg-green-600 hover:bg-green-800 h-10  px-7 rounded text-white ">Search</button>
             </form>
@@ -43,7 +42,6 @@
                                 <label for="title" class="block text-md font-medium text-gray-700 mb-5">Property
                                     Title</label>
                                 <input type="text" name="title" value="{{title}}" placeholder="Enter Property Title"
-                                    required
                                     class="mt-1 p-1 h-10 block w-full border border-gray-500 rounded-md shadow-sm ">
                             </div>
                             <div class="grid grid-cols-2 gap-2 p-1">
@@ -51,21 +49,20 @@
                                     <label for="address" class="block text-md font-medium text-gray-700">Street
                                         Name</label>
                                     <input type="text" value="{{street_name}}" name="street_name"
-                                        placeholder="Enter Street Name" required
+                                        placeholder="Enter Street Name"
                                         class="mt-1 p-1  block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                                 <div>
                                     <label for="house_number" class="block text-md font-medium text-gray-700">House
                                         Number</label>
                                     <input type="number" value="{{house_number}}" name="house_number"
-                                        placeholder="Enter House Number" required
+                                        placeholder="Enter House Number"
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
 
                                 <div>
                                     <label for="city" class="block text-md font-medium text-gray-700">City</label>
                                     <input type="text" value="{{city}}" name="city" placeholder="Enter City Name"
-                                        required
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                                 <div>
@@ -80,25 +77,23 @@
                                 </div>
                                 <div>
                                     <label for="state" class="block text-md font-medium text-gray-700">State</label>
-                                    <input type="text" value="{{state}}" name="state" placeholder="Enter State" required
+                                    <input type="text" value="{{state}}" name="state" placeholder="Enter State"
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                                 <div>
                                     <label for="zip_code" class="block text-md font-medium text-gray-700">Zip
                                         Code</label>
                                     <input type="text" value="{{zip_code}}" name="zip_code" placeholder="Zip Code"
-                                        required
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                                 <div>
                                     <label for="price" class="block text-md font-medium text-gray-700">Price</label>
-                                    <input type="number" value="{{price}}" name="price" placeholder="Price" required
+                                    <input type="number" value="{{price}}" name="price" placeholder="Price"
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                                 <div>
                                     <label for="country" class="block text-md font-medium text-gray-700">Country</label>
                                     <input type="text" value="{{country}}" name="country" placeholder="Enter Country"
-                                        required
                                         class="mt-1 p-1 block w-full border border-gray-500 rounded-md shadow-sm ">
                                 </div>
                             </div>
@@ -107,7 +102,7 @@
                                 <label for="description"
                                     class="block text-md font-medium text-gray-700">Description</label>
                                 <input type="text" value="{{description}}" name="description"
-                                    placeholder="Enter Description" required
+                                    placeholder="Enter Description"
                                     class="mt-1 p-4 pb-20 block w-full   border border-gray-500 rounded-md shadow-sm ">
                             </div>
                         </div>
@@ -126,7 +121,7 @@
                                         <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX 800x400px)</p>
                                     </div>
                                     <input id="thumbnail-1" value="{{image1}}" type="file" name="thumbnail"
-                                        accept="image/*" class="hidden" required>
+                                        accept="image/*" class="hidden">
                                 </label>
                             </div>
                             <div class="max-w-md mx-auto my-4">
@@ -141,7 +136,7 @@
                                         <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX 800x400px)</p>
                                     </div>
                                     <input id="thumbnail-2" value="{{image2}}" type="file" name="image1"
-                                        accept="image/*" class="hidden" required>
+                                        accept="image/*" class="hidden">
                                 </label>
                             </div>
                             <div class="max-w-md mx-auto my-4">
@@ -156,7 +151,7 @@
                                         <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX 800x400px)</p>
                                     </div>
                                     <input id="thumbnail-3" type="file" value="{{image3}}" name="image2"
-                                        accept="image/*" class="hidden" required>
+                                        accept="image/*" class="hidden">
                                 </label>
                             </div>
                             <div class="max-w-md mx-auto my-4">
@@ -171,7 +166,7 @@
                                         <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX 800x400px)</p>
                                     </div>
                                     <input id="thumbnail-4" type="file" value="{{image4}}" name="image3"
-                                        accept="image/*" class="hidden" required>
+                                        accept="image/*" class="hidden">
                                 </label>
                             </div>
                             <div class="max-w-md mx-auto my-4">
@@ -186,7 +181,7 @@
                                         <p class="text-xs text-gray-500">SVG, PNG, JPG or GIF (MAX 800x400px)</p>
                                     </div>
                                     <input id="thumbnail-5" type="file" value="{{image4}}" name="image4"
-                                        accept="image/*" class="hidden" required>
+                                        accept="image/*" class="hidden">
                                 </label>
                             </div>
                         </div>
@@ -209,10 +204,10 @@
     <script>
         document.getElementById('propertyForm').addEventListener('submit', function (event) {
             event.preventDefault(); // Prevent the default form submission
-
+            console.log("dabis")
             const form = document.getElementById('propertyForm');
             const formData = new FormData(form);
-            const propertyid = form.data
+            const propertyid = form.getAttribute("data")
             const token = JSON.parse(localStorage.getItem('Authorization')); // Replace 'your_token_key' with the actual key used to store the token
             console.log(`this is token ${token}`)
             fetch(`/api/updateproperty/${propertyid}`, {
